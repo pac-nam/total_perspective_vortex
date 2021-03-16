@@ -1,6 +1,7 @@
 from scipy import fftpack
 import numpy as np
 import matplotlib.pyplot as plt
+import argparse
 
 from mne.decoding import CSP
 from mne.io import concatenate_raws, read_raw_edf
@@ -11,11 +12,12 @@ from mne import Epochs, pick_types, events_from_annotations
 import sys
 
 class fitTotal :
-    def __init__(self):
-        self.__raw = self.__filter()
+    def __init__(self, args):
+        self.__args = args
+        self.__raw = self.__preprocessing()
         self.csp = CSP()
 
-    def __filter(self):
+    def __preprocessing(self):
         """
         Doc eegbci : https://mne.tools/dev/generated/mne.datasets.eegbci.load_data.html
         Imagerie intéressante :
@@ -26,8 +28,8 @@ class fitTotal :
         subject = 1
         runs = 10
         i = 1
+        tmin, tmax = -0.5,4.0
         raw_fnames = list()
-        # for i in range(1,11) :
         raw_fnames = eegbci.load_data(1, [5,6,9,10,13,14])
         raw = concatenate_raws([read_raw_edf(f, preload=True, stim_channel='auto') for f in raw_fnames])
         eegbci.standardize(raw)  # set channel names
@@ -37,12 +39,14 @@ class fitTotal :
         events, _ = events_from_annotations(raw, event_id=dict(T1=2, T2=3))
         picks = pick_types(raw.info, meg=False, eeg=True, stim=False, eog=False,
                    exclude='bads')
-        print(events)
-        # raw.plot(block=True, scalings='auto', title='Before filter')
-        # raw.plot_psd()
-        # raw.filter(8., 20., method='fir')
-        # raw.plot(block=True, scalings='auto', title='After filter')
-        # raw.plot_psd()
+        epochs = Epochs(raw, events, event_ids, tmin, tmax, picks=picks, preload=True)
+        if self.__args.visualize is True :
+            raw.plot(block=True, scalings='auto', title='Before filter')
+            raw.plot_psd()
+        raw.filter(8., 20., method='fir')
+        if self.__args.visualize is True :
+            raw.plot(block=True, scalings='auto', title='After filter')
+            raw.plot_psd()
         return(raw)
 
     def __channels(self, ann, data):
@@ -88,4 +92,7 @@ class fitTotal :
         return(fourrier.real, fourrier_sort[::-1])
 
 if __name__ == '__main__':
-    fit = fitTotal()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-v","--visualize", help="plot data", action="store_true")
+    args = parser.parse_args()
+    fit = fitTotal(args)
