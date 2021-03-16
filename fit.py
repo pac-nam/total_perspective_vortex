@@ -1,17 +1,21 @@
-from mne.decoding import CSP
-from mne.io import concatenate_raws, read_raw_edf
 from scipy import fftpack
 import numpy as np
 import matplotlib.pyplot as plt
+
+from mne.decoding import CSP
+from mne.io import concatenate_raws, read_raw_edf
 from mne.channels import make_standard_montage
 from mne.datasets import eegbci
+from mne import Epochs, pick_types, events_from_annotations
+
+import sys
 
 class fitTotal :
     def __init__(self):
-        self.__raw = self.__preprocessing()
+        self.__raw = self.__filter()
         self.csp = CSP()
 
-    def __preprocessing(self):
+    def __filter(self):
         """
         Doc eegbci : https://mne.tools/dev/generated/mne.datasets.eegbci.load_data.html
         Imagerie intéressante :
@@ -25,13 +29,20 @@ class fitTotal :
         raw_fnames = list()
         # for i in range(1,11) :
         raw_fnames = eegbci.load_data(1, [5,6,9,10,13,14])
-        print(raw_fnames)
-
         raw = concatenate_raws([read_raw_edf(f, preload=True, stim_channel='auto') for f in raw_fnames])
+        eegbci.standardize(raw)  # set channel names
+        montage = make_standard_montage('standard_1020')
+        raw.set_montage(montage)
+        raw.rename_channels(lambda x: x.strip('.'))
+        events, _ = events_from_annotations(raw, event_id=dict(T1=2, T2=3))
+        picks = pick_types(raw.info, meg=False, eeg=True, stim=False, eog=False,
+                   exclude='bads')
+        print(events)
         # raw.plot(block=True, scalings='auto', title='Before filter')
-        eegbci.standardize(raw)
-        raw.filter(7., 30., method='iir')
+        # raw.plot_psd()
+        # raw.filter(8., 20., method='fir')
         # raw.plot(block=True, scalings='auto', title='After filter')
+        # raw.plot_psd()
         return(raw)
 
     def __channels(self, ann, data):
@@ -75,14 +86,6 @@ class fitTotal :
             plt.plot(ifourrier.real)
             plt.show()
         return(fourrier.real, fourrier_sort[::-1])
-
-# fourrier = fourrier()
-# pipe = Pipeline([('CSP', csp), ('model', classification())])
-# pipe.fit(X, y)
-
-# pickle(pipe)
-
-# pipe.predict(X)
 
 if __name__ == '__main__':
     fit = fitTotal()
