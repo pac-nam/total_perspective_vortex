@@ -1,8 +1,8 @@
 import numpy as np
 import pickle
 import time
+from srcs.csp import CSP
 
-from mne.decoding import CSP
 from mne.io import concatenate_raws, read_raw_edf
 from mne.channels import make_standard_montage
 from mne.datasets import eegbci
@@ -14,7 +14,7 @@ from sklearn.model_selection import GridSearchCV, train_test_split
 
 import sys
 
-class vortex :
+class Vortex :
     def __init__(self, args):
         self.__args = args
 
@@ -26,9 +26,6 @@ class vortex :
             5, 9, 13 Motor execution: hands vs feet
         """
         event_ids=dict(hands=2, feet=3)
-        # subject = 1
-        # runs = 10
-        # i = 1
         raw_fnames = list()
         raw_fnames = eegbci.load_data(1,  [5, 6, 9, 10, 13, 14], path=self.__args.path)
         raw = concatenate_raws([read_raw_edf(f, preload=True, stim_channel='auto') for f in raw_fnames])
@@ -39,11 +36,11 @@ class vortex :
         events, _ = events_from_annotations(raw, event_id=dict(T1=2, T2=3))
         picks = pick_types(raw.info, meg=False, eeg=True, stim=False, eog=False,
                    exclude='bads')
-        epochs = Epochs(raw, events, event_ids, tmin=-0.2, tmax=3.0, picks=picks, preload=True)
+        epochs = Epochs(raw, events, event_ids, tmin=-0.2, tmax=4.0, picks=picks, preload=True)
         if self.__args.visualize is True :
             raw.plot(block=True, scalings='auto', title='Before filter')
             raw.plot_psd()
-        raw.filter(15., 30., method='fir')
+        raw.filter(7., 30., method='fir')
         if self.__args.visualize is True :
             raw.plot(block=True, scalings='auto', title='After filter')
             raw.plot_psd()
@@ -85,7 +82,7 @@ class vortex :
         epochs_get_data_train, epochs_get_data_test, labels_train, labels_test = train_test_split(epochs_get_data, labels, test_size=0.33)
 
         lda = LinearDiscriminantAnalysis()
-        csp = CSP(n_components=4, reg=None, log=True, norm_trace=False)
+        csp = CSP()
 
         pipeline = Pipeline(
             [

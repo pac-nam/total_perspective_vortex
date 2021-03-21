@@ -1,11 +1,11 @@
-from vortex import vortex
+from srcs.vortex import Vortex
 import argparse
 
 def run(args) :
     if (args.training is True and args.predict is True) or (args.training is False and args.predict is False) :
         print("Run training or predict")
         return(0)
-    vort = vortex(args)
+    vort = Vortex(args)
     if args.training is True :
         vort.training()
     if args.predict is True :
