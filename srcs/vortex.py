@@ -27,7 +27,7 @@ class Vortex :
         """
         event_ids=dict(hands=2, feet=3)
         raw_fnames = list()
-        raw_fnames = eegbci.load_data(1,  d, path=self.__args.path)
+        raw_fnames = eegbci.load_data(self.__args.subject,  d, path=self.__args.path)
         raw = concatenate_raws([read_raw_edf(f, preload=True, stim_channel='auto') for f in raw_fnames])
         eegbci.standardize(raw)  # set channel names
         montage = make_standard_montage('standard_1020')
