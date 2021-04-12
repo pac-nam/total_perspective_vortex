@@ -18,7 +18,7 @@ class Vortex :
     def __init__(self, args):
         self.__args = args
 
-    def __preprocessing(self):
+    def __preprocessing(self, d):
         """
         Doc eegbci : https://mne.tools/dev/generated/mne.datasets.eegbci.load_data.html
         Imagerie intéressante :
@@ -27,7 +27,7 @@ class Vortex :
         """
         event_ids=dict(hands=2, feet=3)
         raw_fnames = list()
-        raw_fnames = eegbci.load_data(1,  [5, 6, 9, 10, 13, 14], path=self.__args.path)
+        raw_fnames = eegbci.load_data(1,  d, path=self.__args.path)
         raw = concatenate_raws([read_raw_edf(f, preload=True, stim_channel='auto') for f in raw_fnames])
         eegbci.standardize(raw)  # set channel names
         montage = make_standard_montage('standard_1020')
@@ -46,13 +46,14 @@ class Vortex :
             raw.plot_psd()
         return(epochs) 
 
-    def predict(self) :
+    def predict(self, d, i) :
         try :
-            model = pickle.load(open(".model.pickle", "rb"))
+            name_file = ".model_{}.pickle".format(i)
+            model = pickle.load(open(name_file, "rb"))
         except FileNotFoundError :
             print("Run training please")
             return(-1)
-        epochs = self.__preprocessing()
+        epochs = self.__preprocessing(d)
         epochs = epochs.copy().crop(tmin=1., tmax=2.)
         epochs_get_data = epochs.get_data()
         labels = epochs.events[:, -1] - 2
@@ -70,10 +71,12 @@ class Vortex :
             epoch += 1
             # time.sleep(1)
         correct_percent = (correct / epoch) * 100
-        print("Performance predict : {}%".format(round(correct_percent, 2)))
+        print("Performance predict : {}%\n\n".format(round(correct_percent, 2)))
+        return (round(correct_percent, 2))
 
-    def training(self) :
-        epochs = self.__preprocessing()
+
+    def training(self, d, i) :
+        epochs = self.__preprocessing(d)
         epochs = epochs.copy().crop(tmin=1., tmax=2.)
         epochs_get_data = epochs.get_data()
         labels = epochs.events[:, -1] - 2
@@ -92,15 +95,17 @@ class Vortex :
 
         params_grid = {
             'model__solver' : ['svd', 'lsqr', 'eigen'],
-            'model__n_components' : [None, 0, 1]
+            'model__n_components' : [None, 1]
         }
 
         cross_validation=5
         grid = GridSearchCV(pipeline, param_grid=params_grid, cv=cross_validation, n_jobs=-1)
-        
+            
         grid.fit(epochs_get_data_train, labels_train)
 
         print("best score :" , grid.best_score_, ", best params", grid.best_params_)
         model = grid.best_estimator_
-        print("test score :", model.score(epochs_get_data_test, labels_test))
-        pickle.dump(model, open(".model.pickle", 'wb'))
+        print("test score :", model.score(epochs_get_data_test, labels_test), "\n\n")
+        name_file = ".model_{}.pickle".format(i)
+        pickle.dump(model, open(name_file, 'wb'))
+        return (max([grid.best_score_, model.score(epochs_get_data_test, labels_test)]))

@@ -5,7 +5,7 @@ import scipy.linalg as la
 class CSP :
     def __init__(self):
         """
-        Source code :
+        Source :
                 https://www.researchgate.net/publication/6524218_Common_Spatial_Pattern_Method_for_Channel_Selelction_in_Motor_Imagery_Based_Brain-computer_Interface
                 https://www.researchgate.net/publication/304492710_Common_spatial_pattern-based_feature_extraction_from_the_best_time_segment_of_BCI_data
         """

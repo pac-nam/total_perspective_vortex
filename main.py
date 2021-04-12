@@ -6,10 +6,18 @@ def run(args) :
         print("Run training or predict")
         return(0)
     vort = Vortex(args)
+    data = [[3, 7, 11], [4, 8, 12], [5, 9, 13], [6, 10, 14]]
+    score = 0
     if args.training is True :
-        vort.training()
+        for i in range(len(data)) :
+            score += vort.training(data[i], i)
+        mean = score / 4
+        print("Mean score : {}%".format(round(mean * 100, 2)))
     if args.predict is True :
-        vort.predict()
+        for i in range(len(data)) :
+            score += vort.predict(data[i], i)
+        mean = score / 4
+        print("Mean score : {}%".format(round(mean, 2)))
 
 if __name__ == "__main__" :
     parser = argparse.ArgumentParser()
